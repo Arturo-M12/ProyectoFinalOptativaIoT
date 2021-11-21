@@ -1,4 +1,4 @@
-int buzzerAlerta = 12; //Declaración e inicialización de la variable en el puerto correspondiente
+int buzzerAlerta = 12; //Declaración e inicialización de la variable en el puerto correspondiente (D6)
 void setup() {
   // put your setup code here, to run once:
   pinMode(buzzerAlerta,OUTPUT); //Se define al buzzer como output
