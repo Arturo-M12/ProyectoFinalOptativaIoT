@@ -2,7 +2,7 @@
 Servo servoElevador; //Declaración de la variable de elevador como tipo Servo
 void setup() {
   // put your setup code here, to run once:
-  servoElevador.attach(16); //Se inicializa la variable en el puerto correspondiente
+  servoElevador.attach(16); //Se inicializa la variable en el puerto correspondiente (D5)
   servoElevador.write(0); //Se le ajustan los grados iniciales
 }
 
