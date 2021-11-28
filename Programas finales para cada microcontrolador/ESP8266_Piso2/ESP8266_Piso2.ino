@@ -6,19 +6,22 @@
 DHT dht(DHTPIN,DHTTYPE); //A la variable dht se le atribuyen el pin y el tipo
 Servo servoElevador;
 int led1 = 16, led2 = 5, led3 = 4, led4 = 0; //Inicialización de las variables de los LEDs en los puertos D0-D3
-
+int sensorHumoAnalogico = A0;
+int buzzerAlerta = 15;
+int ledAlerta = 10;
 EspMQTTClient client(
   "GalaxyNote9c9cf",
   "muhs6150",
-  "driver.cloudmqtt.com",  // MQTT Broker server ip
-  "luocawzu",   // Can be omitted if not needed
-  "Xk0OITCDjYHq",   // Can be omitted if not needed
-  "ESP8266_Piso2",     // Client name that uniquely identify your device
-   18598              // The MQTT port, default to 1883. this line can be omitted
+  "driver.cloudmqtt.com",
+  "luocawzu",  
+  "Xk0OITCDjYHq",  
+  "ESP8266_Piso2",     
+   18598             
 );
 void encenderLuces();
 void apagarLuces();
 void funcionDHT();
+void humo();
 void setup()
 {
   Serial.begin(115200);
@@ -31,7 +34,8 @@ void setup()
   pinMode(led4,OUTPUT);
   servoElevador.attach(2);
   dht.begin();
-  
+  pinMode(buzzerAlerta,OUTPUT);
+  pinMode(ledAlerta,OUTPUT);
 }
 
 void onConnectionEstablished()
@@ -60,7 +64,8 @@ void loop()
   client.loop();
   encenderLuces();
   funcionDHT();
-  delay(1000);
+  humo();
+  delay(5000);
 }
 void encenderLuces() {
   //Función que enciende las luces
@@ -79,12 +84,29 @@ void apagarLuces() {
   client.publish("/piso2/luces", "Luces del piso 2 apagadas.");
 }
 void funcionDHT() {
-  float humidity = dht.readHumidity(); //Variable que guarda la humedad 
-  float temperature = dht.readTemperature(); //Variable que guarda la temperatura  
-  char tempString[8];
-  dtostrf(temperature, 1, 2, tempString);
-  char humString[8];
-  dtostrf(humidity, 1, 2, humString);
-  client.publish("/piso2/quirofano/DHT11", tempString);
-  client.publish("/piso2/quirofano/DHT11", humString);
+  float humedad = dht.readHumidity(); //Variable que guarda la humedad 
+  float temperatura = dht.readTemperature(); //Variable que guarda la temperatura  
+  char temperaturaString[8];
+  dtostrf(temperatura, 1, 2, temperaturaString);
+  char humedadString[8];
+  dtostrf(humedad, 1, 2, humedadString);
+  client.publish("/piso2/quirofano/DHT11", temperaturaString);
+  client.publish("/piso2/quirofano/DHT11", humedadString);
+}
+void humo() {
+  int medidaHumoAnalogico = analogRead(sensorHumoAnalogico);
+  char humoAnalogicoString[8];
+  dtostrf(medidaHumoAnalogico,1,2,humoAnalogicoString);
+  client.publish("/piso2/pasillo/humo", humoAnalogicoString);
+  if (medidaHumoAnalogico > 1000) {
+    tone(buzzerAlerta,1000);
+    digitalWrite(ledAlerta,HIGH);
+    delay(1000);
+    noTone(buzzerAlerta);
+    digitalWrite(ledAlerta,LOW);
+   }
+  else {
+    noTone(buzzerAlerta);
+    digitalWrite(ledAlerta,LOW);
+   }
 }

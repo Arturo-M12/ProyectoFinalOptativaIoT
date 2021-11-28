@@ -1,4 +1,3 @@
-
 #include "EspMQTTClient.h"
 #include <Servo.h>
 Servo servoPuerta;
@@ -47,11 +46,11 @@ void onConnectionEstablished()
   //});
 
   // Publish a message to "mytopic/test"
-  client.publish("/piso1/luces", "Prueba luces"); // You can activate the retain flag by setting the third parameter to true
+  client.publish("/piso1/luces", "ESP8266 Piso 1 Funcionando"); // You can activate the retain flag by setting the third parameter to true
 
   // Execute delayed instructions
-  client.executeDelayed(5 * 1000, []() {
-    client.publish("/piso1/luces", "Prueba luces 2");
+  client.executeDelayed(2 * 1000, []() {
+    client.publish("/piso1/luces", "ESP8266 Piso 1 Funcionando (1)");
   });
 }
 
@@ -60,7 +59,7 @@ void loop()
   client.loop();
   encenderLuces();
   ultrasonicoServo();
-  delay(1000);
+  delay(5000);
 }
 void encenderLuces() {
   //Función que enciende las luces
