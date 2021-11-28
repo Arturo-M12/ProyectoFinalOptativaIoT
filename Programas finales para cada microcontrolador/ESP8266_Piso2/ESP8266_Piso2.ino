@@ -30,6 +30,7 @@ void setup()
   pinMode(led3,OUTPUT);
   pinMode(led4,OUTPUT);
   servoElevador.attach(2);
+  dht.begin();
   
 }
 
