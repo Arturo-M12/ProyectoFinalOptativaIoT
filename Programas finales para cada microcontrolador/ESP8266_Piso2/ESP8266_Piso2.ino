@@ -7,11 +7,11 @@ DHT dht(DHTPIN,DHTTYPE); //A la variable dht se le atribuyen el pin y el tipo
 Servo servoElevador;
 int led1 = 16, led2 = 5, led3 = 4, led4 = 0; //Inicialización de las variables de los LEDs en los puertos D0-D3
 int sensorHumoAnalogico = A0;
-int buzzerAlerta = 15;
-int ledAlerta = 10;
+int buzzerAlerta = 14;
+int ledAlerta = 12;
 EspMQTTClient client(
-  "GalaxyNote9c9cf",
-  "muhs6150",
+  "INFINITUMA76C", //GalaxyNote9c9cf
+  "3114793511", //muhs6150
   "driver.cloudmqtt.com",
   "luocawzu",  
   "Xk0OITCDjYHq",  
@@ -22,6 +22,19 @@ void encenderLuces();
 void apagarLuces();
 void funcionDHT();
 void humo();
+void motorElevador();
+/*void callback(char* topic, byte* payload, unsigned int length) {
+  String string;  
+  for (int i = 0; i < length; i++) {
+    string += ((char)payload[1]);
+  }
+  if (topic = "/piso2/elevador") {
+    int resultado = string.toInt();
+    int pos = map(resultado, 1, 100, 0, 180);
+    servoElevador.write(pos);
+    delay(15);
+  }
+} */
 void setup()
 {
   Serial.begin(115200);
@@ -41,8 +54,8 @@ void setup()
 void onConnectionEstablished()
 {
   // Subscribe to "mytopic/test" and display received message to Serial
-  //client.subscribe("mytopic/test", [](const String & payload) {
-    //Serial.println(payload);
+  //client.subscribe("/piso2/elevador", [](const String & payload) {
+  //Serial.println(payload);
   //});
 
   // Subscribe to "mytopic/wildcardtest/#" and display received message to Serial
@@ -51,11 +64,11 @@ void onConnectionEstablished()
   //});
 
   // Publish a message to "mytopic/test"
-  client.publish("/piso2/luces", "Prueba luces"); // You can activate the retain flag by setting the third parameter to true
+  client.publish("/piso2", "Piso 2 funcionando"); // You can activate the retain flag by setting the third parameter to true
 
   // Execute delayed instructions
   client.executeDelayed(5 * 1000, []() {
-    client.publish("/piso2/luces", "Prueba luces 2");
+    client.publish("/piso2", "Piso 2 funcionado (1)");
   });
 }
 
@@ -65,7 +78,8 @@ void loop()
   encenderLuces();
   funcionDHT();
   humo();
-  delay(5000);
+  motorElevador();
+  delay(100);
 }
 void encenderLuces() {
   //Función que enciende las luces
@@ -90,8 +104,9 @@ void funcionDHT() {
   dtostrf(temperatura, 1, 2, temperaturaString);
   char humedadString[8];
   dtostrf(humedad, 1, 2, humedadString);
-  client.publish("/piso2/quirofano/DHT11", temperaturaString);
-  client.publish("/piso2/quirofano/DHT11", humedadString);
+  client.publish("/piso2/quirofano/DHT11/temperatura", temperaturaString);
+  client.publish("/piso2/quirofano/DHT11/humedad", humedadString);
+  delay(5000);
 }
 void humo() {
   int medidaHumoAnalogico = analogRead(sensorHumoAnalogico);
@@ -109,4 +124,13 @@ void humo() {
     noTone(buzzerAlerta);
     digitalWrite(ledAlerta,LOW);
    }
+}
+void motorElevador() {
+  client.subscribe("/piso2/elevador", [](const String & payload) {
+    Serial.println(payload);
+    int resultado = payload.toInt();
+    int pos = map(resultado, 1, 100, 0, 180);
+    servoElevador.write(pos);
+    delay(15);
+  });
 }
