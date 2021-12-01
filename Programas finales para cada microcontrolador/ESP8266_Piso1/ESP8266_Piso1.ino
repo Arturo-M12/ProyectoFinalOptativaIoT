@@ -8,8 +8,8 @@ float distance, duration; //Declaración de las variables que serán utilizadas 
 #define trigpin D6 //Definición del pin para trig (emisión de las ondas ultrasónicas)
 //En esta sección se incluyen los datos de la conexión WiFi, del Broker y el nombre de la tarjeta:
 EspMQTTClient client(
-  "INFINITUMA76C", //GalaxyNote9c9cf //Nombre de la red WiFi
-  "3114793511", //muhs6150 //Contraseña de la red WiFi
+  "GalaxyNote9c9cf", //Nombre de la red WiFi
+  "muhs6150", //Contraseña de la red WiFi
   "driver.cloudmqtt.com",  //IP del server del Broker MQTT
   "luocawzu",   //Usuario de MQTT
   "Xk0OITCDjYHq",   //Contraseña de MQTT
