@@ -1,102 +1,84 @@
-#include "EspMQTTClient.h"
-#include <Servo.h>
-#include <DHT.h>
+//Este es el código para el microcontrolador ESP8266 que se utiliza en el piso 2
+#include "EspMQTTClient.h" //Librería de MQTT Client para la transmisión y recepción de datos
+#include <Servo.h> //Librería de servomotores
+#include <DHT.h> //Librería del sensor DHT de temperatura y humedad
 #define DHTTYPE DHT11 //Se define el tipo de sensor DHT (en este caso es un DHT11, se reconoce por el color azul)
 #define DHTPIN D7 //Se define el pin correspondiente (D7)
 DHT dht(DHTPIN,DHTTYPE); //A la variable dht se le atribuyen el pin y el tipo
-Servo servoElevador;
+Servo servoElevador; //Se declara a servoElevador como una variable de tipo Servo
 int led1 = 16, led2 = 5, led3 = 4, led4 = 0; //Inicialización de las variables de los LEDs en los puertos D0-D3
-int sensorHumoAnalogico = A0;
-int buzzerAlerta = 14;
-int ledAlerta = 12;
+int sensorHumoAnalogico = A0; //Declaración e inicialización del sensor de humo en el pin A0
+int buzzerAlerta = 14; //Declaración e inicialización del buzzer de alerta en el pin D5
+int ledAlerta = 12; //Declaración e inicialización del LED rojo de alerta en el pin D6
+//En esta sección se incluyen los datos de la conexión WiFi, del Broker y el nombre de la tarjeta:
 EspMQTTClient client(
-  "INFINITUMA76C", //GalaxyNote9c9cf
-  "3114793511", //muhs6150
-  "driver.cloudmqtt.com",
-  "luocawzu",  
-  "Xk0OITCDjYHq",  
-  "ESP8266_Piso2",     
-   18598             
+  "INFINITUMA76C", //GalaxyNote9c9cf //Nombre de la red WiFi
+  "3114793511", //muhs6150 //Contraseña de la red WiFi
+  "driver.cloudmqtt.com", //IP del server del Broker MQTT
+  "luocawzu", //Usuario de MQTT 
+  "Xk0OITCDjYHq", //Contraseña de MQTT  
+  "ESP8266_Piso2", //Nombre que tendrá el microcontrolador    
+   18598          //El puerto MQTT   
 );
-void encenderLuces();
-void apagarLuces();
-void funcionDHT();
-void humo();
-void motorElevador();
-/*void callback(char* topic, byte* payload, unsigned int length) {
-  String string;  
-  for (int i = 0; i < length; i++) {
-    string += ((char)payload[1]);
-  }
-  if (topic = "/piso2/elevador") {
-    int resultado = string.toInt();
-    int pos = map(resultado, 1, 100, 0, 180);
-    servoElevador.write(pos);
-    delay(15);
-  }
-} */
+void luces(); //Declaración de la función de las luces
+void funcionDHT(); //Declaración de la función del sensor de temperatura y humedad
+void humo(); //Declaración de la función del sensor MQ2 para medir niveles de humo
+void motorElevador(); //Declaración de la función para que el motor del elevador suba o baje
 void setup()
 {
-  Serial.begin(115200);
-  client.enableDebuggingMessages();
-  client.enableHTTPWebUpdater(); 
-  client.enableLastWillMessage("TestClient/lastwill", "I am going offline");
+  Serial.begin(115200); //Inicio del monitor serial con un baudio de 115200
+  client.enableDebuggingMessages(); //Función de MQTT
+  client.enableHTTPWebUpdater(); //Función de MQTT
+  client.enableLastWillMessage("TestClient/lastwill", "I am going offline"); //Mensaje que se imprime en caso de que el microcontrolador pierda la señal
+  //Declaración de los LEDs como OUTPUT:
   pinMode(led1,OUTPUT);
   pinMode(led2,OUTPUT);
   pinMode(led3,OUTPUT);
   pinMode(led4,OUTPUT);
-  servoElevador.attach(2);
-  dht.begin();
-  pinMode(buzzerAlerta,OUTPUT);
-  pinMode(ledAlerta,OUTPUT);
+  servoElevador.attach(2); //Se inicializa el servomotor del elevador en el pin D4
+  dht.begin(); //Función que inicializa el funcionamiento del DHT11
+  pinMode(buzzerAlerta,OUTPUT); //Declaración del buzzer de alerta como output
+  pinMode(ledAlerta,OUTPUT); //Declaración del led de alerta como output
 }
-
+//Función que se utilzia para probar la conexión exitosa del microcontrolador:
 void onConnectionEstablished()
 {
-  // Subscribe to "mytopic/test" and display received message to Serial
-  //client.subscribe("/piso2/elevador", [](const String & payload) {
-  //Serial.println(payload);
-  //});
-
-  // Subscribe to "mytopic/wildcardtest/#" and display received message to Serial
-  //client.subscribe("mytopic/wildcardtest/#", [](const String & topic, const String & payload) {
-    //Serial.println("(From wildcard) topic: " + topic + ", payload: " + payload);
-  //});
-
-  // Publish a message to "mytopic/test"
-  client.publish("/piso2", "Piso 2 funcionando"); // You can activate the retain flag by setting the third parameter to true
-
-  // Execute delayed instructions
-  client.executeDelayed(5 * 1000, []() {
-    client.publish("/piso2", "Piso 2 funcionado (1)");
+  client.publish("/piso2", "Piso 2 funcionando"); //Primer mensaje
+  client.executeDelayed(2 * 1000, []() { //Delay
+    client.publish("/piso2", "Piso 2 funcionado (1)"); //Segundo mensaje
   });
 }
-
-void loop()
+void loop() //Función que se repite infinitamente en el microcontrolador
 {
-  client.loop();
-  encenderLuces();
-  funcionDHT();
-  humo();
-  motorElevador();
-  delay(100);
+  client.loop(); //Función MQTT
+  luces(); //Función de luces
+  funcionDHT(); //Función sensor de temperatura y humedad
+  humo(); //Función sensor humo
+  motorElevador(); //Función servomotor elevador
+  delay(2000); //Delay de un segundo
 }
-void encenderLuces() {
-  //Función que enciende las luces
-  digitalWrite(led1,HIGH);
-  digitalWrite(led2,HIGH);
-  digitalWrite(led3,HIGH);
-  digitalWrite(led4,HIGH);
-  client.publish("/piso2/luces", "Luces del piso 2 encendidas.");
+//Función para controlar las luces mediante Node Red Dashboard y visualizar su estado mediante suscripción y publicación
+void luces() {
+  client.subscribe("/piso2/luces/estatus", [](const String & estatusLuces) {
+    if (estatusLuces == "LOW") {
+      digitalWrite(led1,LOW);
+      digitalWrite(led2,LOW);
+      digitalWrite(led3,LOW);
+      digitalWrite(led4,LOW);
+      client.publish("/piso2/luces", "Luces del piso 2 apagadas.");
+    }
+    else if (estatusLuces == "HIGH") {
+      digitalWrite(led1,HIGH);
+      digitalWrite(led2,HIGH);
+      digitalWrite(led3,HIGH);
+      digitalWrite(led4,HIGH);
+      client.publish("/piso2/luces", "Luces del piso 2 encendidas.");
+    }
+    else {}
+    Serial.println(estatusLuces);
+    });
 }
-void apagarLuces() {
-  //Función que apaga las luces
-  digitalWrite(led1,LOW);
-  digitalWrite(led2,LOW);
-  digitalWrite(led3,LOW);
-  digitalWrite(led4,LOW);
-  client.publish("/piso2/luces", "Luces del piso 2 apagadas.");
-}
+//Función para que el sensor DHT11 lea la temperatura y humedad relativa
 void funcionDHT() {
   float humedad = dht.readHumidity(); //Variable que guarda la humedad 
   float temperatura = dht.readTemperature(); //Variable que guarda la temperatura  
@@ -106,31 +88,28 @@ void funcionDHT() {
   dtostrf(humedad, 1, 2, humedadString);
   client.publish("/piso2/quirofano/DHT11/temperatura", temperaturaString);
   client.publish("/piso2/quirofano/DHT11/humedad", humedadString);
-  delay(5000);
 }
+//Función para que el sensor de humo mida la cantidad de humo en el ambiente
 void humo() {
   int medidaHumoAnalogico = analogRead(sensorHumoAnalogico);
   char humoAnalogicoString[8];
   dtostrf(medidaHumoAnalogico,1,2,humoAnalogicoString);
   client.publish("/piso2/pasillo/humo", humoAnalogicoString);
-  if (medidaHumoAnalogico > 1000) {
+  if (medidaHumoAnalogico > 200) {
     tone(buzzerAlerta,1000);
     digitalWrite(ledAlerta,HIGH);
-    delay(1000);
-    noTone(buzzerAlerta);
-    digitalWrite(ledAlerta,LOW);
    }
   else {
     noTone(buzzerAlerta);
     digitalWrite(ledAlerta,LOW);
    }
 }
+//Función para que el elevador se mueva dependiendo de los inputs realizados en Node Red Dashboard
 void motorElevador() {
   client.subscribe("/piso2/elevador", [](const String & payload) {
     Serial.println(payload);
     int resultado = payload.toInt();
     int pos = map(resultado, 1, 100, 0, 180);
     servoElevador.write(pos);
-    delay(15);
   });
 }
